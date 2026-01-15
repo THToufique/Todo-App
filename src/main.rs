@@ -5,7 +5,7 @@ use iced::{Element, Task, Theme};
 use iced::widget::{button, column, container, row, text, text_input};
 use iced::window;
 use iced::{Color, Size};
-use task::{Task as TodoTask};
+use task::{Task as TodoTask, Priority};
 use storage::Storage;
 
 fn main() -> iced::Result {
@@ -23,6 +23,7 @@ struct App {
     tasks: Vec<TodoTask>,
     storage: Storage,
     input: String,
+    selected_priority: Priority,
 }
 
 impl App {
@@ -34,6 +35,7 @@ impl App {
             tasks,
             storage,
             input: String::new(),
+            selected_priority: Priority::Medium,
         }, Task::none())
     }
 
@@ -45,7 +47,8 @@ impl App {
             Message::AddTask => {
                 if !self.input.trim().is_empty() {
                     let id = self.tasks.len() as u64;
-                    let task = TodoTask::new(id, self.input.clone());
+                    let mut task = TodoTask::new(id, self.input.clone());
+                    task.priority = self.selected_priority;
                     self.tasks.push(task);
                     self.input.clear();
                     self.storage.save(&self.tasks).ok();
@@ -60,6 +63,9 @@ impl App {
             Message::DeleteTask(id) => {
                 self.tasks.retain(|t| t.id != id);
                 self.storage.save(&self.tasks).ok();
+            }
+            Message::SetPriority(priority) => {
+                self.selected_priority = priority;
             }
         }
         Task::none()
@@ -83,6 +89,60 @@ impl App {
                 selection: Color::from_rgba(0.3, 0.5, 0.8, 0.5),
             });
 
+        let priority_buttons = row![
+            button("Low")
+                .on_press(Message::SetPriority(Priority::Low))
+                .padding(8)
+                .style(move |_theme, _status| button::Style {
+                    background: Some(if matches!(self.selected_priority, Priority::Low) {
+                        Color::from_rgba(0.3, 0.6, 0.3, 0.9)
+                    } else {
+                        Color::from_rgba(0.2, 0.2, 0.25, 0.7)
+                    }.into()),
+                    text_color: Color::WHITE,
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }),
+            button("Med")
+                .on_press(Message::SetPriority(Priority::Medium))
+                .padding(8)
+                .style(move |_theme, _status| button::Style {
+                    background: Some(if matches!(self.selected_priority, Priority::Medium) {
+                        Color::from_rgba(0.6, 0.5, 0.2, 0.9)
+                    } else {
+                        Color::from_rgba(0.2, 0.2, 0.25, 0.7)
+                    }.into()),
+                    text_color: Color::WHITE,
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }),
+            button("High")
+                .on_press(Message::SetPriority(Priority::High))
+                .padding(8)
+                .style(move |_theme, _status| button::Style {
+                    background: Some(if matches!(self.selected_priority, Priority::High) {
+                        Color::from_rgba(0.8, 0.3, 0.3, 0.9)
+                    } else {
+                        Color::from_rgba(0.2, 0.2, 0.25, 0.7)
+                    }.into()),
+                    text_color: Color::WHITE,
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }),
+        ].spacing(5);
+
         let add_button = button("Add")
             .on_press(Message::AddTask)
             .padding(10)
@@ -97,11 +157,17 @@ impl App {
                 ..Default::default()
             });
 
-        let input_row = row![input, add_button].spacing(10);
+        let input_row = row![input, priority_buttons, add_button].spacing(10);
 
         let tasks_list = self.tasks.iter().fold(
             column![].spacing(5),
             |col, task| {
+                let priority_color = match task.priority {
+                    Priority::Low => Color::from_rgb(0.3, 0.6, 0.3),
+                    Priority::Medium => Color::from_rgb(0.6, 0.5, 0.2),
+                    Priority::High => Color::from_rgb(0.8, 0.3, 0.3),
+                };
+
                 let checkbox = button(
                     text(if task.completed { "✓" } else { "○" })
                         .size(18)
@@ -113,11 +179,11 @@ impl App {
                 )
                 .on_press(Message::ToggleTask(task.id))
                 .padding(8)
-                .style(|_theme, _status| button::Style {
+                .style(move |_theme, _status| button::Style {
                     background: Some(Color::from_rgba(0.2, 0.2, 0.25, 0.7).into()),
                     border: iced::Border {
-                        color: Color::from_rgba(0.4, 0.4, 0.5, 0.5),
-                        width: 1.0,
+                        color: priority_color,
+                        width: 2.0,
                         radius: 6.0.into(),
                     },
                     ..Default::default()
@@ -171,4 +237,5 @@ enum Message {
     AddTask,
     ToggleTask(u64),
     DeleteTask(u64),
+    SetPriority(Priority),
 }
