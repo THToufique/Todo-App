@@ -69,22 +69,75 @@ impl App {
         let input = text_input("What needs to be done?", &self.input)
             .on_input(Message::InputChanged)
             .on_submit(Message::AddTask)
-            .padding(10);
+            .padding(10)
+            .style(|_theme, _status| text_input::Style {
+                background: Color::from_rgba(0.2, 0.2, 0.25, 0.9).into(),
+                border: iced::Border {
+                    color: Color::from_rgba(0.4, 0.4, 0.5, 0.5),
+                    width: 1.0,
+                    radius: 8.0.into(),
+                },
+                icon: Color::TRANSPARENT,
+                placeholder: Color::from_rgba(0.6, 0.6, 0.7, 1.0),
+                value: Color::WHITE,
+                selection: Color::from_rgba(0.3, 0.5, 0.8, 0.5),
+            });
 
-        let add_button = button("Add").on_press(Message::AddTask).padding(10);
+        let add_button = button("Add")
+            .on_press(Message::AddTask)
+            .padding(10)
+            .style(|_theme, _status| button::Style {
+                background: Some(Color::from_rgba(0.2, 0.4, 0.7, 0.9).into()),
+                text_color: Color::WHITE,
+                border: iced::Border {
+                    color: Color::TRANSPARENT,
+                    width: 0.0,
+                    radius: 8.0.into(),
+                },
+                ..Default::default()
+            });
 
         let input_row = row![input, add_button].spacing(10);
 
         let tasks_list = self.tasks.iter().fold(
             column![].spacing(5),
             |col, task| {
-                let checkbox = button(if task.completed { "✓" } else { "○" })
-                    .on_press(Message::ToggleTask(task.id));
+                let checkbox = button(
+                    text(if task.completed { "✓" } else { "○" })
+                        .size(18)
+                        .color(if task.completed { 
+                            Color::from_rgb(0.3, 0.8, 0.3) 
+                        } else { 
+                            Color::from_rgb(0.6, 0.6, 0.7) 
+                        })
+                )
+                .on_press(Message::ToggleTask(task.id))
+                .padding(8)
+                .style(|_theme, _status| button::Style {
+                    background: Some(Color::from_rgba(0.2, 0.2, 0.25, 0.7).into()),
+                    border: iced::Border {
+                        color: Color::from_rgba(0.4, 0.4, 0.5, 0.5),
+                        width: 1.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                });
                 
                 let title = text(&task.title).size(16);
                 
                 let delete_btn = button("×")
-                    .on_press(Message::DeleteTask(task.id));
+                    .on_press(Message::DeleteTask(task.id))
+                    .padding(8)
+                    .style(|_theme, _status| button::Style {
+                        background: Some(Color::from_rgba(0.8, 0.2, 0.2, 0.8).into()),
+                        text_color: Color::WHITE,
+                        border: iced::Border {
+                            color: Color::TRANSPARENT,
+                            width: 0.0,
+                            radius: 6.0.into(),
+                        },
+                        ..Default::default()
+                    });
 
                 let task_row = row![checkbox, title, delete_btn]
                     .spacing(10)
