@@ -1,16 +1,19 @@
 mod task;
 mod storage;
 
-use iced::{Element, Task, Theme};
+use iced::{Element, Task, Theme, Font};
 use iced::widget::{button, column, container, row, text, text_input};
 use iced::window;
 use iced::{Color, Size};
 use task::{Task as TodoTask, Priority};
 use storage::Storage;
 
+const FIRA_CODE: Font = Font::with_name("Fira Code");
+
 fn main() -> iced::Result {
     iced::application("Todo App", App::update, App::view)
         .theme(|_| Theme::TokyoNightStorm)
+        .font(include_bytes!("../fonts/FiraCode-Regular.ttf").as_slice())
         .window(window::Settings {
             size: Size::new(800.0, 600.0),
             transparent: true,
@@ -243,16 +246,17 @@ impl App {
                 };
 
                 let checkbox = button(
-                    text(if task.completed { "✓" } else { "○" })
-                        .size(18)
+                    text(if task.completed { "[X]" } else { "[ ]" })
+                        .size(16)
+                        .font(FIRA_CODE)
                         .color(if task.completed { 
-                            Color::from_rgb(0.3, 0.8, 0.3) 
+                            Color::from_rgb(0.3, 0.9, 0.3) 
                         } else { 
-                            Color::from_rgb(0.6, 0.6, 0.7) 
+                            Color::from_rgb(0.7, 0.7, 0.8) 
                         })
                 )
                 .on_press(Message::ToggleTask(task.id))
-                .padding(8)
+                .padding(4)
                 .style(move |_theme, _status| button::Style {
                     background: Some(Color::from_rgba(0.2, 0.2, 0.25, 0.7).into()),
                     border: iced::Border {
@@ -263,11 +267,11 @@ impl App {
                     ..Default::default()
                 });
                 
-                let title = text(&task.title).size(16);
+                let title = text(&task.title).size(18).font(FIRA_CODE);
                 
                 let delete_btn = button("×")
                     .on_press(Message::DeleteTask(task.id))
-                    .padding(8)
+                    .padding(4)
                     .style(|_theme, _status| button::Style {
                         background: Some(Color::from_rgba(0.8, 0.2, 0.2, 0.8).into()),
                         text_color: Color::WHITE,
@@ -288,7 +292,9 @@ impl App {
         );
 
         let content = column![
-            text("Todo App").size(32),
+            container(text("Todo App").size(32).font(FIRA_CODE))
+                .width(iced::Length::Fill)
+                .center_x(iced::Length::Fill),
             input_row,
             filter_buttons,
             tasks_list,
