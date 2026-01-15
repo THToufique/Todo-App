@@ -24,6 +24,14 @@ struct App {
     storage: Storage,
     input: String,
     selected_priority: Priority,
+    filter: Filter,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Filter {
+    All,
+    Pending,
+    Completed,
 }
 
 impl App {
@@ -36,6 +44,7 @@ impl App {
             storage,
             input: String::new(),
             selected_priority: Priority::Medium,
+            filter: Filter::All,
         }, Task::none())
     }
 
@@ -66,6 +75,9 @@ impl App {
             }
             Message::SetPriority(priority) => {
                 self.selected_priority = priority;
+            }
+            Message::SetFilter(filter) => {
+                self.filter = filter;
             }
         }
         Task::none()
@@ -159,7 +171,69 @@ impl App {
 
         let input_row = row![input, priority_buttons, add_button].spacing(10);
 
-        let tasks_list = self.tasks.iter().fold(
+        let filter_buttons = row![
+            button("All")
+                .on_press(Message::SetFilter(Filter::All))
+                .padding(6)
+                .style(move |_theme, _status| button::Style {
+                    background: Some(if self.filter == Filter::All {
+                        Color::from_rgba(0.3, 0.4, 0.6, 0.9)
+                    } else {
+                        Color::from_rgba(0.2, 0.2, 0.25, 0.6)
+                    }.into()),
+                    text_color: Color::WHITE,
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }),
+            button("Pending")
+                .on_press(Message::SetFilter(Filter::Pending))
+                .padding(6)
+                .style(move |_theme, _status| button::Style {
+                    background: Some(if self.filter == Filter::Pending {
+                        Color::from_rgba(0.3, 0.4, 0.6, 0.9)
+                    } else {
+                        Color::from_rgba(0.2, 0.2, 0.25, 0.6)
+                    }.into()),
+                    text_color: Color::WHITE,
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }),
+            button("Completed")
+                .on_press(Message::SetFilter(Filter::Completed))
+                .padding(6)
+                .style(move |_theme, _status| button::Style {
+                    background: Some(if self.filter == Filter::Completed {
+                        Color::from_rgba(0.3, 0.4, 0.6, 0.9)
+                    } else {
+                        Color::from_rgba(0.2, 0.2, 0.25, 0.6)
+                    }.into()),
+                    text_color: Color::WHITE,
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }),
+        ].spacing(5);
+
+        let filtered_tasks: Vec<&TodoTask> = self.tasks.iter()
+            .filter(|task| match self.filter {
+                Filter::All => true,
+                Filter::Pending => !task.completed,
+                Filter::Completed => task.completed,
+            })
+            .collect();
+
+        let tasks_list = filtered_tasks.iter().fold(
             column![].spacing(5),
             |col, task| {
                 let priority_color = match task.priority {
@@ -216,6 +290,7 @@ impl App {
         let content = column![
             text("Todo App").size(32),
             input_row,
+            filter_buttons,
             tasks_list,
         ]
         .padding(20)
@@ -238,4 +313,5 @@ enum Message {
     ToggleTask(u64),
     DeleteTask(u64),
     SetPriority(Priority),
+    SetFilter(Filter),
 }
