@@ -1,10 +1,11 @@
 mod task;
 mod storage;
 
-use iced::{Element, Task, Theme, Font};
+use iced::{Element, Task, Theme, Font, Event, Subscription};
 use iced::widget::{button, column, container, row, text, text_input};
 use iced::window;
 use iced::{Color, Size};
+use iced::keyboard::{self, Key};
 use task::{Task as TodoTask, Priority};
 use storage::Storage;
 
@@ -12,6 +13,7 @@ const FIRA_CODE: Font = Font::with_name("Fira Code");
 
 fn main() -> iced::Result {
     iced::application("Todo App", App::update, App::view)
+        .subscription(App::subscription)
         .theme(|_| Theme::TokyoNightStorm)
         .font(include_bytes!("../fonts/FiraCode-Regular.ttf").as_slice())
         .window(window::Settings {
@@ -53,6 +55,10 @@ impl App {
         }, Task::none())
     }
 
+    fn subscription(&self) -> Subscription<Message> {
+        iced::event::listen().map(Message::EventOccurred)
+    }
+
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::InputChanged(value) => {
@@ -86,6 +92,25 @@ impl App {
             }
             Message::SearchChanged(value) => {
                 self.search = value;
+            }
+            Message::EventOccurred(event) => {
+                if let Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. }) = event {
+                    match key {
+                        Key::Character(c) if c == "1" && modifiers.control() => {
+                            self.selected_priority = Priority::Low;
+                        }
+                        Key::Character(c) if c == "2" && modifiers.control() => {
+                            self.selected_priority = Priority::Medium;
+                        }
+                        Key::Character(c) if c == "3" && modifiers.control() => {
+                            self.selected_priority = Priority::High;
+                        }
+                        Key::Character(c) if c == "f" && modifiers.control() => {
+                            // Focus search - handled by UI
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
         Task::none()
@@ -350,4 +375,5 @@ enum Message {
     SetPriority(Priority),
     SetFilter(Filter),
     SearchChanged(String),
+    EventOccurred(Event),
 }
