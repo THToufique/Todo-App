@@ -28,6 +28,7 @@ struct App {
     input: String,
     selected_priority: Priority,
     filter: Filter,
+    search: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -48,6 +49,7 @@ impl App {
             input: String::new(),
             selected_priority: Priority::Medium,
             filter: Filter::All,
+            search: String::new(),
         }, Task::none())
     }
 
@@ -81,6 +83,9 @@ impl App {
             }
             Message::SetFilter(filter) => {
                 self.filter = filter;
+            }
+            Message::SearchChanged(value) => {
+                self.search = value;
             }
         }
         Task::none()
@@ -228,11 +233,35 @@ impl App {
                 }),
         ].spacing(5);
 
+        let search_input = text_input("Search tasks...", &self.search)
+            .on_input(Message::SearchChanged)
+            .padding(8)
+            .style(|_theme, _status| text_input::Style {
+                background: Color::from_rgba(0.2, 0.2, 0.25, 0.9).into(),
+                border: iced::Border {
+                    color: Color::from_rgba(0.4, 0.4, 0.5, 0.5),
+                    width: 1.0,
+                    radius: 6.0.into(),
+                },
+                icon: Color::TRANSPARENT,
+                placeholder: Color::from_rgba(0.6, 0.6, 0.7, 1.0),
+                value: Color::WHITE,
+                selection: Color::from_rgba(0.3, 0.5, 0.8, 0.5),
+            });
+
         let filtered_tasks: Vec<&TodoTask> = self.tasks.iter()
             .filter(|task| match self.filter {
                 Filter::All => true,
                 Filter::Pending => !task.completed,
                 Filter::Completed => task.completed,
+            })
+            .filter(|task| {
+                if self.search.is_empty() {
+                    true
+                } else {
+                    task.title.to_lowercase().contains(&self.search.to_lowercase()) ||
+                    task.description.to_lowercase().contains(&self.search.to_lowercase())
+                }
             })
             .collect();
 
@@ -296,7 +325,7 @@ impl App {
                 .width(iced::Length::Fill)
                 .center_x(iced::Length::Fill),
             input_row,
-            filter_buttons,
+            row![filter_buttons, search_input].spacing(20),
             tasks_list,
         ]
         .padding(20)
@@ -320,4 +349,5 @@ enum Message {
     DeleteTask(u64),
     SetPriority(Priority),
     SetFilter(Filter),
+    SearchChanged(String),
 }
